@@ -1,7 +1,13 @@
 module RubyDanfe
   class XML
     def css(xpath)
-      @xml.css(xpath)
+      nodes = xpath.split("/")
+      current = @xml
+
+      nodes.each do |node|
+        current = current&.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")
+      end
+      current
     end
 
     def xpath(regex)
@@ -19,8 +25,14 @@ module RubyDanfe
     end
 
     def [](xpath)
-      node = @xml.css(xpath)
-      return node ? node.text : ""
+      nodes = xpath.split("/")
+      current = @xml
+
+      nodes.each do |node|
+        current = current&.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")
+      end
+
+      return current ? current.text : ""
     end
 
     def render
@@ -29,7 +41,7 @@ module RubyDanfe
       elsif @xml.at_css('InfNfse/Numero')
         RubyDanfe.render @xml.to_s, :danfse
       else
-        if @xml.at_css('CTeOS')
+        if @xml.at_css("ns|CTeOS", "ns" => "http://www.portalfiscal.inf.br/cte")
           RubyDanfe.render @xml.to_s, :dacteos
         else
           RubyDanfe.render @xml.to_s, :dacte
@@ -70,7 +82,7 @@ module RubyDanfe
 
     def attrib(node, attrib)
       begin
-        return @xml.css(node).attr(attrib).text
+        @xml.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")&.attr(attrib).text
       rescue
         ""
       end
