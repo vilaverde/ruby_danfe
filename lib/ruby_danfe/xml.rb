@@ -1,12 +1,17 @@
 module RubyDanfe
   class XML
-    def css(xpath)
+    def css(xpath, ns: "http://www.portalfiscal.inf.br/cte")
       nodes = xpath.split("/")
       current = @xml
 
       nodes.each do |node|
-        current = current&.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")
+        if ns.present?
+          current = current&.css("ns|#{ node }", "ns" => ns)
+        else
+          current = current&.css(node)
+        end
       end
+
       current
     end
 
@@ -25,14 +30,10 @@ module RubyDanfe
     end
 
     def [](xpath)
-      nodes = xpath.split("/")
-      current = @xml
+      node = css(xpath)
+      node = css(xpath, ns: nil) unless node.present?
 
-      nodes.each do |node|
-        current = current&.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")
-      end
-
-      return current ? current.text : ""
+      return node ? node.text : ""
     end
 
     def render
