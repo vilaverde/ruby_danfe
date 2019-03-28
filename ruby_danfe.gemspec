@@ -1,6 +1,5 @@
 # coding: utf-8
-$:.push File.expand_path("../lib", __FILE__)
-require "ruby_danfe/version"
+require_relative "version"
 
 Gem::Specification.new do |spec|
   spec.name          = "ruby_danfe"

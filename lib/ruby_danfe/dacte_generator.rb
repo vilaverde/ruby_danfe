@@ -3,6 +3,7 @@ module RubyDanfe
   class DacteGenerator
     def initialize(xml)
       @xml = xml
+      @xml.ns = "http://www.portalfiscal.inf.br/cte"
       @pdf = Document.new
     end
 
@@ -141,9 +142,9 @@ module RubyDanfe
       @pdf.ibox 0.91, 3.21, 14.10, 1.44, 'DATA E HORA DE EMISSÃO', emiss, {:size => 8, :align => :center}
       @pdf.ibox 0.91, 3.43, 17.31, 1.44, 'INSC. SUFRAMA DESTINATÁRIO', @xml['dest/ISUF'], {:size => 8, :align => :center}
       @pdf.ibox 1.13, 12.82, 7.92, 2.35
-      @pdf.ibarcode 0.85, 12.82, 9.25, 3.35, @xml.attrib('infCte', 'Id')[3..-1]
+      @pdf.ibarcode 0.85, 12.82, 9.25, 3.35, @xml.attr('infCte', 'Id')[3..-1]
       @pdf.ibox 0.62, 12.82, 7.92, 3.48, 'Chave de acesso', ''
-      @pdf.ibox 0.90, 12.82, 7.92, 3.62, '', @xml.attrib('infCte', 'Id')[3..-1].gsub(/(\d)(?=(\d\d\d\d)+(?!\d))/, "\\1 "), {:style => :bold, :align => :center, :size => 8, :border => 0}
+      @pdf.ibox 0.90, 12.82, 7.92, 3.62, '', @xml.attr('infCte', 'Id')[3..-1].gsub(/(\d)(?=(\d\d\d\d)+(?!\d))/, "\\1 "), {:style => :bold, :align => :center, :size => 8, :border => 0}
       @pdf.ibox 1.13, 12.82, 7.92, 4.10, '', 'Consulta de autenticidade no portal do CT-e, no site da Sefaz Autorizadora, ou em http://www.cte.fazenda.gov.br/portal',
         { :align => :center, :valign => :center, :style => :bold, :size => 8 }
       @pdf.ibox 0.71, 12.82, 7.92, 5.23, 'Protocolo de Autorização de Uso'

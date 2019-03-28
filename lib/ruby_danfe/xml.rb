@@ -1,14 +1,16 @@
 module RubyDanfe
   class XML
-    def css(xpath, ns: "http://www.portalfiscal.inf.br/cte")
+    attr_accessor :ns
+
+    def css(xpath, no_ns = false)
       nodes = xpath.split("/")
       current = @xml
 
       nodes.each do |node|
-        if ns.present?
-          current = current&.css("ns|#{ node }", "ns" => ns)
-        else
+        if (@ns.nil? || no_ns)
           current = current&.css(node)
+        else
+          current = current&.css("ns|#{ node }", :ns => @ns)
         end
       end
 
@@ -30,8 +32,8 @@ module RubyDanfe
     end
 
     def [](xpath)
-      node = css(xpath)
-      node = css(xpath, ns: nil) unless node.present?
+      node = css(xpath, true)
+      node = css(xpath) unless !(node.nil? || node.empty?)
 
       return node ? node.text : ""
     end
@@ -41,12 +43,12 @@ module RubyDanfe
         RubyDanfe.render @xml.to_s, :danfe
       elsif @xml.at_css('InfNfse/Numero')
         RubyDanfe.render @xml.to_s, :danfse
+      elsif @xml.at_css("ns|CTeOS", :ns => "http://www.portalfiscal.inf.br/cte")
+        RubyDanfe.render @xml.to_s, :dacteos
+      elsif @xml.at_css("ns|CTe", :ns => "http://www.portalfiscal.inf.br/cte")
+        RubyDanfe.render @xml.to_s, :dacte
       else
-        if @xml.at_css("ns|CTeOS", "ns" => "http://www.portalfiscal.inf.br/cte")
-          RubyDanfe.render @xml.to_s, :dacteos
-        else
-          RubyDanfe.render @xml.to_s, :dacte
-        end
+        RubyDanfe.render @xml.to_s, :damdfe
       end
     end
 
@@ -81,9 +83,9 @@ module RubyDanfe
       acc
     end
 
-    def attrib(node, attrib)
+    def attr(node, attribute)
       begin
-        @xml.css("ns|#{ node }", "ns" => "http://www.portalfiscal.inf.br/cte")&.attr(attrib).text
+        @xml.css("ns|#{ node }", :ns => @ns)&.attr(attribute)&.text
       rescue
         ""
       end

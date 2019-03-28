@@ -1,0 +1,16 @@
+version: "3"
+services:
+  app:
+    build: .
+    container_name: ruby-danfe-app
+    command: bin/rails server --port 3020 --binding 0.0.0.0
+    ports:
+    - 3666:3666
+    volumes:
+    - .:/ruby-danfe-app
+    - gems:/gems
+    tty: true
+    stdin_open: true
+volumes:
+  database:
+  gems:
