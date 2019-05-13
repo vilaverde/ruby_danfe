@@ -441,7 +441,10 @@ module RubyDanfe
          cst = '20 - Tributação com BC reduzida do ICMS'
          tipoIcms = 'ICMS20'
       elsif !@xml['imp/ICMS/ICMS45'].eql?("")
-         cst = '40 - ICMS Isenção;  41 - ICMS não tributada;  51 - ICMS diferido'
+         icms_mode = @xml['imp/ICMS/ICMS45'][0..1]
+         cst = "40 - ICMS Isenção" if icms_mode == "40"
+         cst = "41 - ICMS não tributada" if icms_mode == "41"
+         cst = "51 - ICMS diferido" if icms_mode == "51"
          tipoIcms = 'ICMS45'
       elsif !@xml['imp/ICMS/ICMS60'].eql?("")
          cst = '60 - ICMS cobrado anteriormente por Substituição Tributária'
@@ -457,11 +460,21 @@ module RubyDanfe
         tipoIcms = 'ICMSOutraUF'
       end
       @pdf.ibox 0.90, 10.00, 0.25, 17.83, 'SITUAÇÃO TRIBUTÁRIA', cst, { :size => 7, :style => :bold }
-      @pdf.inumeric 0.90, 3.00, 10.25, 17.83, 'BASE DE CÁLCULO', @xml['imp/ICMS/'+ tipoIcms + '/vBC'], { :size => 7, :style => :bold }
-      @pdf.inumeric 0.90, 1.00, 13.25, 17.83, 'AL. ICMS', @xml[('imp/ICMS/' + tipoIcms + '/pICMS')], { :size => 7, :style => :bold }
-      @pdf.inumeric 0.90, 3.00, 14.25, 17.83, 'VALOR ICMS', @xml['imp/ICMS/' +  tipoIcms + '/vICMS'],{ :size => 7, :style => :bold }
-      @pdf.inumeric 0.90, 2.00, 17.25, 17.83, '% RED.BC.CALC.', @xml['imp/ICMS/' + tipoIcms + '/pRedBC'], { :size => 7, :style => :bold }
-      @pdf.inumeric 0.90, 1.49, 19.25, 17.83, 'ICMS ST.', @xml['imp/ICMS/' + tipoIcms + '/pRedBC'], { :size => 7, :style => :bold }
+
+      vbc = @xml['imp/ICMS/'+ tipoIcms + '/vBC'].empty? ?  "0.00" : @xml['imp/ICMS/'+ tipoIcms + '/vBC']
+      @pdf.inumeric 0.90, 3.00, 10.25, 17.83, 'BASE DE CÁLCULO', vbc , { :size => 7, :style => :bold }
+
+      picms = @xml[('imp/ICMS/' + tipoIcms + '/pICMS')].empty? ? "0.00" : @xml[('imp/ICMS/' + tipoIcms + '/pICMS')]
+      @pdf.inumeric 0.90, 1.00, 13.25, 17.83, 'AL. ICMS',  picms, { :size => 7, :style => :bold }
+
+      vicms = @xml['imp/ICMS/' +  tipoIcms + '/vICMS'].empty? ? "0.00" : @xml['imp/ICMS/' +  tipoIcms + '/vICMS']
+      @pdf.inumeric 0.90, 3.00, 14.25, 17.83, 'VALOR ICMS', vicms, { :size => 7, :style => :bold }
+
+      predbc = @xml['imp/ICMS/' + tipoIcms + '/pRedBC'].empty? ? "0.00" : @xml['imp/ICMS/' + tipoIcms + '/pRedBC']
+      @pdf.inumeric 0.90, 2.00, 17.25, 17.83, '% RED.BC.CALC.', predbc, { :size => 7, :style => :bold }
+
+      ret = @xml['imp/ICMS/' + tipoIcms + '/vBCSTRet'].empty? ? "0.00" : @xml['imp/ICMS/' + tipoIcms + '/vBCSTRet']
+      @pdf.inumeric 0.90, 1.49, 19.25, 17.83, 'ICMS ST.', ret, { :size => 7, :style => :bold }
     end
 
     def render_documentos_originarios
@@ -482,7 +495,7 @@ module RubyDanfe
         @pdf.ibox 5.52, 1.50, x, y, '', det.css('mod').text, { :size => 7, :border => 0, :style => :bold }
         x = x + 1.75
         @pdf.ibox 5.52, 2.25, x, y, '', Helper.format_cnpj(@xml['rem/CNPJ']), { :size => 7, :border => 0, :style => :bold } if @xml['rem/CNPJ'] != ''
-        @pdf.ibox 5.52, 5.25, x, y, '', @xml['rem/CPF'][0,3] + '.' + @xml['rem/CPF'][3,3] + '.' +@xml['rem/CPF'][6,3] + '-' + @xml['rem/CPF'][9,2], { :size => 7, :border => 0, :style => :bold } if @xml['rem/CPF'] != ''
+        @pdf.ibox 5.52, 5.25, x, y, '', @xml['rem/CPF'][0,3] + '.' + @xml['rem/CPF'][3,3] + '.' + @xml['rem/CPF'][6,3] + '-' + @xml['rem/CPF'][9,2], { :size => 7, :border => 0, :style => :bold } if @xml['rem/CPF'] != ''
         x = x + 5.50
         @pdf.ibox 5.52, 0.75, x, y, '', det.css('serie').text, { :size => 7, :border => 0, :style => :bold }
         x = x + 1.00
@@ -508,9 +521,12 @@ module RubyDanfe
 
     def render_observacoes
       #OBSERVAÇÕES
+      inf_cte_comp = @xml['infCteComp/chave'].empty? ? "" : "CTe COMPLEMENTADO " + "Chave: " + @xml['infCteComp/chave'] + " "
+      vtprest = @xml['vPresComp/vTPrest'].empty? ? "" : "Valor de serviço: " + Helper.numerify(@xml['vPresComp/vTPrest']).to_s
+      compl = @xml['compl/xObs'] + "\n" + inf_cte_comp + vtprest
+
       @pdf.ibox 0.40, 20.49, 0.25, 24.65, '', 'OBSERVAÇÕES', { :align => :left, :size => 7, :style => :bold, :border => 0 }
-      @pdf.ibox 1.40, 20.49, 0.25, 25.05, '', (@xml['compl/xObs'] + "\n CTe COMPLEMENTADO " + "Chave: " + @xml['infCteComp/chave'] + " Valor de serviço: " +
-      Helper.numerify(@xml['vPresComp/vTPrest']).to_s ), { :align => :left, :size => 7 }
+      @pdf.ibox 1.40, 20.49, 0.25, 25.05, '', compl, { :align => :left, :size => 7 }
     end
 
     def render_modal
@@ -519,12 +535,15 @@ module RubyDanfe
       @pdf.ibox 0.90, 3.00, 0.25, 26.85, 'RNTRC DA EMPRESA', @xml['rodo/RNTRC'], { :size => 7, :style => :bold }
       @pdf.ibox 0.90, 3.00, 3.25, 26.85, 'CIOT', @xml['rodo/CIOT'], { :size => 7, :style => :bold }
 
-      dtentrega = @xml['rodo/dPrev'][8, 2].to_s + '/' + @xml['rodo/dPrev'][5, 2].to_s + '/' + @xml['rodo/dPrev'][0, 4].to_s
+      if @xml['rodo/dPrev'].present?
+        dtentrega = @xml['rodo/dPrev'][8, 2].to_s + '/' + @xml['rodo/dPrev'][5, 2].to_s + '/' + @xml['rodo/dPrev'][0, 4].to_s
+      else
+        dtentrega = ""
+      end
 
       @pdf.ibox 0.90, 4.00, 6.25, 26.85, 'DATA PREVISTA DE ENTREGA', dtentrega, { :size => 7, :style => :bold }
       @pdf.ibox 0.90, 10.49, 10.25, 26.85, '', 'ESTE CONHECIMENTO DE TRANSPORTE ATENDE A LEGISLAÇÃO DE TRANSPORTE RODOVIÁRIO EM VIGOR', { :size => 5, :align => :center }
-
-      #informações do modal
+#informações do modal
       @pdf.ibox 0.40, 15.49, 0.25, 27.75, '', 'USO EXCLUSIVO DO EMISSOR DO CT-e', { :align => :center, :size => 7 }
       @pdf.ibox 1.20, 15.49, 0.25, 28.15, '', '', { :align => :center, :size => 6 }
       @pdf.ibox 0.40, 5.00, 15.74, 27.75, '', 'RESERVADO AO FISCO', { :align => :center, :size => 7 }
